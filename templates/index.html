@@ -1,0 +1,262 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CardioPredict S.A. - Login</title>
+    <link rel="stylesheet" href="/static/css/styles.css">
+    <style>
+        .plans-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 15px;
+            margin: 20px 0;
+        }
+        
+        .plan-card {
+            border: 2px solid #e0e0e0;
+            border-radius: 10px;
+            padding: 15px;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        
+        .plan-card:hover {
+            border-color: #667eea;
+            transform: translateY(-2px);
+        }
+        
+        .plan-card.selected {
+            border-color: #667eea;
+            background: #f0f4ff;
+        }
+        
+        .plan-card h4 {
+            margin: 0 0 10px 0;
+            color: #667eea;
+        }
+        
+        .plan-card .price {
+            font-size: 24px;
+            font-weight: bold;
+            color: #333;
+            margin: 10px 0;
+        }
+        
+        .plan-card .description {
+            font-size: 13px;
+            color: #666;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="login-box">
+            <div class="logo">
+                <div class="logo-header">
+                    <img src="/static/img/logo.jpg" alt="Logo" class="nav-logo">
+                    <h1>CardioPredict S.A.</h1>
+                </div>
+                <p>Sistema B2B de Predicción de Riesgo Cardiovascular</p>
+            </div>
+            
+            <div class="tabs">
+                <button class="tab active" onclick="showTab('login')">Iniciar Sesión</button>
+                <button class="tab" onclick="showTab('register')">Registrarse</button>
+            </div>
+            
+            <!-- Login Form -->
+            <form id="loginForm" class="form-container">
+                <h2>Iniciar Sesión</h2>
+                <input type="email" id="loginEmail" placeholder="Email" required>
+                <input type="password" id="loginPassword" placeholder="Contraseña" required>
+                <button type="submit">Ingresar</button>
+                <p class="forgot-password"><a href="#" onclick="recoverPassword()">¿Olvidaste tu contraseña?</a></p>
+            </form>
+            
+            <!-- Register Form -->
+            <form id="registerForm" class="form-container" style="display: none;">
+                <h2>Registro de Proveedor</h2>
+                <input type="text" id="registerName" placeholder="Nombre completo del médico/responsable" required>
+                <input type="text" id="registerOrganization" placeholder="Nombre del consultorio/clínica" required>
+                <input type="email" id="registerEmail" placeholder="Email profesional" required>
+                <input type="password" id="registerPassword" placeholder="Contraseña" required minlength="6">
+                <input type="password" id="registerConfirmPassword" placeholder="Confirmar contraseña" required>
+                
+                <h3 style="margin: 20px 0 10px 0;">Selecciona tu Plan</h3>
+                <div class="plans-grid">
+                    <div class="plan-card" onclick="selectPlan('micro')" id="plan-micro">
+                        <h4>Micro</h4>
+                        <div class="price">$0.75<small>/análisis</small></div>
+                        <div class="description">
+                            Pago por uso<br>
+                            Sin cuota mensual<br>
+                            Ideal para consultorios pequeños
+                        </div>
+                    </div>
+                    
+                    <div class="plan-card selected" onclick="selectPlan('basico')" id="plan-basico">
+                        <h4>Básico</h4>
+                        <div class="price">$99<small>/mes</small></div>
+                        <div class="description">
+                            Hasta 150 análisis incluidos<br>
+                            $0.65 por análisis extra<br>
+                            Ideal para clínicas
+                        </div>
+                    </div>
+                    
+                    <div class="plan-card" onclick="selectPlan('empresarial')" id="plan-empresarial">
+                        <h4>Empresarial</h4>
+                        <div class="price">$399<small>/mes</small></div>
+                        <div class="description">
+                            Análisis ilimitados<br>
+                            Acceso API<br>
+                            Ideal para hospitales
+                        </div>
+                    </div>
+                </div>
+                
+                <input type="hidden" id="selectedPlan" value="basico">
+                
+                <button type="submit">Registrarse</button>
+            </form>
+            
+            <div id="message" class="message"></div>
+        </div>
+    </div>
+    
+    <script>
+// Plan seleccionado por defecto
+let currentPlan = 'basico';
+
+// Cambiar entre tabs
+function showTab(tab) {
+    const loginForm = document.getElementById('loginForm');
+    const registerForm = document.getElementById('registerForm');
+    const tabs = document.querySelectorAll('.tab');
+    
+    if (tab === 'login') {
+        loginForm.style.display = 'block';
+        registerForm.style.display = 'none';
+        tabs[0].classList.add('active');
+        tabs[1].classList.remove('active');
+    } else {
+        loginForm.style.display = 'none';
+        registerForm.style.display = 'block';
+        tabs[0].classList.remove('active');
+        tabs[1].classList.add('active');
+    }
+}
+
+// Seleccionar plan
+function selectPlan(plan) {
+    // Remover selección anterior
+    document.querySelectorAll('.plan-card').forEach(card => {
+        card.classList.remove('selected');
+    });
+    
+    // Seleccionar nuevo
+    document.getElementById(`plan-${plan}`).classList.add('selected');
+    document.getElementById('selectedPlan').value = plan;
+    currentPlan = plan;
+}
+
+// Mostrar mensaje
+function showMessage(message, type) {
+    const messageDiv = document.getElementById('message');
+    messageDiv.textContent = message;
+    messageDiv.className = `message ${type}`;
+    
+    setTimeout(() => {
+        messageDiv.style.display = 'none';
+    }, 5000);
+}
+
+// Login
+document.getElementById('loginForm').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    
+    const email = document.getElementById('loginEmail').value;
+    const password = document.getElementById('loginPassword').value;
+    
+    try {
+        const formData = new FormData();
+        formData.append('username', email);
+        formData.append('password', password);
+        
+        const response = await fetch('/token', {
+            method: 'POST',
+            body: formData
+        });
+        
+        const data = await response.json();
+        
+        if (response.ok) {
+            localStorage.setItem('token', data.access_token);
+            window.location.href = '/dashboard';
+        } else {
+            showMessage(data.detail || 'Error al iniciar sesión', 'error');
+        }
+    } catch (error) {
+        showMessage('Error de conexión', 'error');
+    }
+});
+
+// Register
+document.getElementById('registerForm').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    
+    const name = document.getElementById('registerName').value;
+    const organization = document.getElementById('registerOrganization').value;
+    const email = document.getElementById('registerEmail').value;
+    const password = document.getElementById('registerPassword').value;
+    const confirmPassword = document.getElementById('registerConfirmPassword').value;
+    const plan = document.getElementById('selectedPlan').value;
+    
+    if (password !== confirmPassword) {
+        showMessage('Las contraseñas no coinciden', 'error');
+        return;
+    }
+    
+    if (password.length < 6) {
+        showMessage('La contraseña debe tener al menos 6 caracteres', 'error');
+        return;
+    }
+    
+    try {
+        const response = await fetch('/register', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                email: email,
+                password: password,
+                full_name: name,
+                organization: organization,
+                plan: plan
+            })
+        });
+        
+        const data = await response.json();
+        
+        if (response.ok) {
+            showMessage(`¡Registro exitoso! Plan: ${data.plan}. Ahora puedes iniciar sesión`, 'success');
+            setTimeout(() => {
+                showTab('login');
+            }, 2000);
+        } else {
+            showMessage(data.detail || 'Error al registrarse', 'error');
+        }
+    } catch (error) {
+        showMessage('Error de conexión', 'error');
+    }
+});
+
+// Recuperar contraseña
+function recoverPassword() {
+    alert('Funcionalidad en desarrollo. Contacte a soporte@cardiopredict.com');
+}
+    </script>
+</body>
+</html>

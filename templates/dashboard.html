@@ -1,0 +1,968 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CardioPredict - Dashboard</title>
+    <link rel="stylesheet" href="/static/css/styles.css">
+</head>
+<body>
+    <nav class="navbar">
+        <div class="nav-brand">
+            <img src="/static/img/logo.jpg" alt="Logo" class="nav-logo">
+            CardioPredict S.A.</div>
+        <div class="nav-user">
+            <span id="userName">Usuario</span> | 
+            <span id="userOrg">Organización</span>
+            <button onclick="logout()">Cerrar Sesión</button>
+        </div>
+    </nav>
+    
+    <div class="dashboard-container">
+        <div class="sidebar">
+            <h3>Tu Plan</h3>
+            <div id="planInfo" class="business-info">
+                <p>Cargando...</p>
+            </div>
+            
+            <h3>Uso Este Mes</h3>
+            <div id="usageInfo" class="usage-info">
+                <p>Cargando...</p>
+            </div>
+            
+            <button onclick="generateUsageReport()" class="btn-usage">
+                📊 Informe de Uso
+            </button>
+            
+            <button onclick="generateBillingReport()" class="btn-invoice">
+                💵 Generar Factura
+            </button>
+            
+            <h3>Historial Reciente</h3>
+            <div id="history" class="history-list">
+                <p>Cargando...</p>
+            </div>
+        </div>
+        
+        <div class="main-content">
+            <h2>🩺 Análisis de Riesgo Cardiovascular</h2>
+            <p class="subtitle">Complete los datos del paciente y parámetros clínicos</p>
+            
+            <form id="predictionForm">
+                <!-- DATOS DEL PACIENTE -->
+                <div class="form-section patient-section">
+                    <h3>👤 Información del Paciente</h3>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Nombre Completo del Paciente *</label>
+                            <input type="text" id="patientName" required placeholder="Ej: Juan Pérez">
+                        </div>
+                        <div class="form-group">
+                            <label>Cédula/ID del Paciente *</label>
+                            <input type="text" id="patientId" required placeholder="Ej: 8-123-456">
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Email del Paciente (opcional)</label>
+                            <input type="email" id="patientEmail" placeholder="paciente@email.com">
+                        </div>
+                        <div class="form-group">
+                            <label>Teléfono del Paciente (opcional)</label>
+                            <input type="tel" id="patientPhone" placeholder="Ej: +507 6123-4567">
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Información Básica -->
+                <div class="form-section">
+                    <h3>📋 Datos Clínicos Básicos</h3>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Edad (años) *</label>
+                            <input type="number" id="age" min="20" max="100" value="50" required>
+                        </div>
+                        <div class="form-group">
+                            <label>Sexo *</label>
+                            <select id="sex" required>
+                                <option value="0">Femenino</option>
+                                <option value="1">Masculino</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Parámetros Metabólicos -->
+                <div class="form-section">
+                    <h3>🩸 Parámetros Metabólicos</h3>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Presión Arterial en Reposo (mm Hg) *</label>
+                            <input type="number" id="restingBP" min="80" max="200" value="120" required>
+                            <small>Normal: 90-120</small>
+                        </div>
+                        <div class="form-group">
+                            <label>Colesterol Sérico (mg/dL) *</label>
+                            <input type="number" id="cholesterol" min="100" max="400" value="200" required>
+                            <small>Normal: <200</small>
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Azúcar en Sangre en Ayunas > 120 mg/dL *</label>
+                            <select id="fastingBS" required>
+                                <option value="0">No</option>
+                                <option value="1">Sí</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Índices Cardíacos y Riesgo -->
+                <div class="form-section">
+                    <h3>❤️ Índices Cardíacos y Riesgo</h3>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Frecuencia Cardíaca Máxima (thalach) *</label>
+                            <input type="number" id="maxHR" min="60" max="220" value="150" required>
+                        </div>
+                        <div class="form-group">
+                            <label>Angina Inducida por Ejercicio *</label>
+                            <select id="exerciseAngina" required>
+                                <option value="0">No</option>
+                                <option value="1">Sí</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Depresión del Segmento ST (oldpeak) *</label>
+                            <input type="number" id="stDepression" min="0" max="10" step="0.1" value="1.0" required>
+                            <small>Normal: <1.0</small>
+                        </div>
+                        <div class="form-group">
+                            <label>Tipo de Dolor de Pecho *</label>
+                            <select id="chestPainType" required>
+                                <option value="0">Angina típica</option>
+                                <option value="1">Angina atípica</option>
+                                <option value="2">Dolor no anginoso</option>
+                                <option value="3">Asintomático</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Vasos Principales Coloreados (0-3) *</label>
+                            <input type="range" id="numMajorVessels" min="0" max="3" value="0" oninput="updateVesselsValue(this.value)">
+                            <small>Valor: <span id="vesselsValue">0</span></small>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="cost-preview" id="costPreview" style="display: none;">
+                    <p>💰 Costo de este análisis: <strong id="predictionCost">$0.00</strong></p>
+                </div>
+                
+                <button type="submit" class="btn-predict">🔍 Generar Reporte de Riesgo para el Paciente</button>
+            </form>
+            
+            <!-- Resultado -->
+            <div id="result" class="result-container" style="display: none;">
+                <h2>📊 Resultado del Análisis</h2>
+                <div id="resultContent"></div>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+// Verificar autenticación y cargar datos
+window.addEventListener('load', async () => {
+    const token = localStorage.getItem('token');
+    
+    if (!token) {
+        window.location.href = '/';
+        return;
+    }
+    
+    try {
+        const response = await fetch('/me', {
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+        
+        if (response.ok) {
+            const user = await response.json();
+            document.getElementById('userName').textContent = user.full_name;
+            document.getElementById('userOrg').textContent = user.organization;
+            
+            loadPlanInfo();
+            loadUsageInfo();
+            loadHistory();
+        } else {
+            localStorage.removeItem('token');
+            window.location.href = '/';
+        }
+    } catch (error) {
+        console.error('Error:', error);
+        window.location.href = '/';
+    }
+});
+
+function logout() {
+    localStorage.removeItem('token');
+    window.location.href = '/';
+}
+
+function updateVesselsValue(value) {
+    document.getElementById('vesselsValue').textContent = value;
+}
+
+async function loadPlanInfo() {
+    const token = localStorage.getItem('token');
+    
+    try {
+        const response = await fetch('/usage', {
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+        
+        const data = await response.json();
+        const planDiv = document.getElementById('planInfo');
+        
+        const plan_name = data.plan_name || data.plan || "No especificado";
+        
+        const monthlyFee = data.base_cost > 0 ? `$${data.base_cost}/mes` : 'Pago por uso';
+        const limit = data.predictions_limit === -1 ? 'Ilimitado' : data.predictions_limit;
+        
+        planDiv.innerHTML = `
+            <p><strong>Plan:</strong> ${plan_name}</p>
+            <p><strong>Tarifa Base:</strong> ${monthlyFee}</p>
+            <p><strong>Predicciones Incluidas:</strong> ${limit}</p>
+        `;
+    } catch (error) {
+        console.error('Error cargando plan:', error);
+    }
+}
+
+async function loadUsageInfo() {
+    const token = localStorage.getItem('token');
+    
+    try {
+        const response = await fetch('/usage', {
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+        
+        const data = await response.json();
+        const usageDiv = document.getElementById('usageInfo');
+        
+        const overage = data.overage_predictions > 0 ? 
+            `<p style="color: #f44336;"><strong>Excedente:</strong> ${data.overage_predictions} análisis (+$${data.overage_cost.toFixed(2)})</p>` : '';
+        
+        usageDiv.innerHTML = `
+            <p><strong>Período:</strong> ${data.current_period_start} al ${data.current_period_end}</p>
+            <p><strong>Análisis realizados:</strong> ${data.predictions_this_period}</p>
+            ${overage}
+            <p><strong>Total a pagar:</strong> <span style="font-size: 1.5em; color: #667eea;">$${data.total_cost.toFixed(2)}</span></p>
+        `;
+        
+        showCostPreview(data);
+    } catch (error) {
+        console.error('Error cargando uso:', error);
+    }
+}
+
+function showCostPreview(usageData) {
+    const costPreview = document.getElementById('costPreview');
+    const costSpan = document.getElementById('predictionCost');
+    
+    let nextCost = 0;
+    if (usageData.plan === 'micro') {
+        nextCost = 0.75;
+    } else if (usageData.plan === 'basico') {
+        if (usageData.predictions_this_period >= usageData.predictions_limit) {
+            nextCost = 0.65;
+        } else {
+            nextCost = 0;
+        }
+    } else {
+        nextCost = 0;
+    }
+    
+    costSpan.textContent = `$${nextCost.toFixed(2)}`;
+    costPreview.style.display = 'block';
+}
+
+async function loadHistory() {
+    const token = localStorage.getItem('token');
+    
+    try {
+        const response = await fetch('/history', {
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+        
+        const data = await response.json();
+        const historyDiv = document.getElementById('history');
+        
+        if (data.predictions.length === 0) {
+            historyDiv.innerHTML = '<p>No hay análisis previos</p>';
+            return;
+        }
+        
+        historyDiv.innerHTML = data.predictions.map(p => `
+            <div class="history-item" onclick="viewPatientReport(${p.id})">
+                <strong>${p.patient_name}</strong><br>
+                <small>ID: ${p.patient_id}</small><br>
+                <strong>${p.risk_level}</strong> (${(p.probability * 100).toFixed(1)}%)<br>
+                <small>${new Date(p.created_at).toLocaleDateString('es')}</small><br>
+                <small style="color: #667eea;">Costo: $${p.cost.toFixed(2)}</small>
+            </div>
+        `).join('');
+    } catch (error) {
+        console.error('Error cargando historial:', error);
+    }
+}
+
+async function generateUsageReport() {
+    const token = localStorage.getItem('token');
+    
+    try {
+        const response = await fetch('/usage/report', {
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+        
+        const data = await response.json();
+        
+        if (response.ok) {
+            displayUsageReport(data);
+        } else {
+            alert('Error generando informe: ' + data.detail);
+        }
+    } catch (error) {
+        alert('Error de conexión');
+    }
+}
+
+async function generateBillingReport() {
+    const token = localStorage.getItem('token');
+    
+    if (!confirm('¿Desea generar la factura del período actual?')) {
+        return;
+    }
+    
+    try {
+        const response = await fetch('/billing/generate', {
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+        
+        const data = await response.json();
+        
+        if (response.ok) {
+            displayBillingInvoice(data);
+        } else {
+            alert('Error generando factura: ' + data.detail);
+        }
+    } catch (error) {
+        alert('Error de conexión');
+    }
+}
+
+function displayUsageReport(data) {
+    const modal = document.createElement('div');
+    modal.className = 'modal';
+    modal.innerHTML = `
+        <div class="modal-content" style="max-width: 900px; max-height: 80vh; overflow-y: auto;">
+            <span class="close" onclick="this.parentElement.parentElement.remove()">&times;</span>
+            <h2>📊 Informe de Uso del Período</h2>
+            
+            <div style="background: #f5f5f5; padding: 20px; border-radius: 10px; margin: 20px 0;">
+                <h3>Resumen</h3>
+                <p><strong>Proveedor:</strong> ${data.summary.provider_name}</p>
+                <p><strong>Organización:</strong> ${data.summary.organization}</p>
+                <p><strong>Plan:</strong> ${data.summary.plan_name}</p>
+                <p><strong>Período:</strong> ${data.summary.current_period_start} al ${data.summary.current_period_end}</p>
+                <p><strong>Total de Análisis:</strong> ${data.summary.predictions_this_period}</p>
+                ${data.summary.overage_predictions > 0 ? 
+                    `<p><strong>Análisis Excedentes:</strong> ${data.summary.overage_predictions}</p>` : ''}
+                <p style="font-size: 1.3em; color: #667eea;"><strong>Costo Total:</strong> $${data.summary.total_cost.toFixed(2)}</p>
+            </div>
+            
+            <h3>Detalle de Análisis</h3>
+            <table style="width: 100%; border-collapse: collapse;">
+                <thead>
+                    <tr style="background: #667eea; color: white;">
+                        <th style="padding: 10px;">ID</th>
+                        <th style="padding: 10px;">Paciente</th>
+                        <th style="padding: 10px;">Cédula</th>
+                        <th style="padding: 10px;">Edad</th>
+                        <th style="padding: 10px;">Riesgo</th>
+                        <th style="padding: 10px;">Costo</th>
+                        <th style="padding: 10px;">Fecha</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    ${data.details.map(d => `
+                        <tr style="border-bottom: 1px solid #ddd;">
+                            <td style="padding: 10px;">#${d.id}</td>
+                            <td style="padding: 10px;">${d.patient_name}</td>
+                            <td style="padding: 10px;">${d.patient_id}</td>
+                            <td style="padding: 10px;">${d.patient_age}</td>
+                            <td style="padding: 10px;">${d.risk_level}</td>
+                            <td style="padding: 10px;">$${d.cost.toFixed(2)}</td>
+                            <td style="padding: 10px;">${new Date(d.date).toLocaleDateString('es')}</td>
+                        </tr>
+                    `).join('')}
+                </tbody>
+            </table>
+            
+            <div style="text-align: center; margin-top: 30px;">
+                <button onclick="window.print()" class="btn-print">🖨️ Imprimir</button>
+                <button onclick="this.closest('.modal').remove()" class="btn-close">Cerrar</button>
+            </div>
+        </div>
+    `;
+    document.body.appendChild(modal);
+}
+
+// Reemplaza la función displayBillingInvoice en tu dashboard.html
+
+function displayBillingInvoice(data) {
+    const modal = document.createElement('div');
+    modal.className = 'modal';
+    modal.innerHTML = `
+        <div class="modal-content" style="max-width: 700px;">
+            <span class="close" onclick="this.parentElement.parentElement.remove()">&times;</span>
+            <h2>💵 Factura #${data.billing_id}</h2>
+            
+            <div style="background: #f5f5f5; padding: 20px; border-radius: 10px; margin: 20px 0;">
+                <p><strong>Organización:</strong> ${data.invoice_details.organization}</p>
+                <p><strong>Plan:</strong> ${data.invoice_details.plan}</p>
+                <p><strong>Período:</strong> ${data.invoice_details.period}</p>
+                <hr style="margin: 15px 0;">
+                <p><strong>Análisis realizados:</strong> ${data.invoice_details.predictions_count}</p>
+                <p><strong>Tarifa Base:</strong> ${data.invoice_details.base_fee}</p>
+                <p><strong>Excedente:</strong> ${data.invoice_details.overage_fee}</p>
+                <hr style="margin: 15px 0;">
+                <p style="font-size: 1.5em; color: #667eea;"><strong>TOTAL A PAGAR:</strong> ${data.invoice_details.total}</p>
+            </div>
+            
+            <!-- Formulario de Tarjeta de Crédito -->
+            <div id="paymentSection" style="background: #fff; padding: 25px; border-radius: 10px; border: 2px solid #667eea; margin: 20px 0;">
+                <h3 style="color: #667eea; margin-bottom: 20px;">💳 Información de Pago</h3>
+                <form id="creditCardForm" onsubmit="processPaymentWithCard(event, ${data.billing_id}, '${data.invoice_details.total}')">
+                    <div style="margin-bottom: 15px;">
+                        <label style="display: block; margin-bottom: 5px; font-weight: bold;">Nombre del Titular *</label>
+                        <input type="text" id="cardholderName" required 
+                               placeholder="Ej: Juan Pérez"
+                               style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 5px; font-size: 14px;">
+                    </div>
+                    
+                    <div style="margin-bottom: 15px;">
+                        <label style="display: block; margin-bottom: 5px; font-weight: bold;">Número de Tarjeta *</label>
+                        <input type="text" id="cardNumber" required 
+                               placeholder="1234 5678 9012 3456"
+                               maxlength="19"
+                               oninput="formatCardNumber(this)"
+                               style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 5px; font-size: 14px; letter-spacing: 2px;">
+                    </div>
+                    
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 15px;">
+                        <div>
+                            <label style="display: block; margin-bottom: 5px; font-weight: bold;">Fecha de Expiración *</label>
+                            <input type="text" id="expirationDate" required 
+                                   placeholder="MM/AA"
+                                   maxlength="5"
+                                   oninput="formatExpirationDate(this)"
+                                   style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 5px; font-size: 14px;">
+                        </div>
+                        <div>
+                            <label style="display: block; margin-bottom: 5px; font-weight: bold;">CVV/CVC *</label>
+                            <input type="text" id="cvv" required 
+                                   placeholder="123"
+                                   maxlength="4"
+                                   oninput="this.value = this.value.replace(/[^0-9]/g, '')"
+                                   style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 5px; font-size: 14px;">
+                        </div>
+                    </div>
+                    
+                    <div style="background: #e8f5e9; padding: 15px; border-radius: 5px; margin-bottom: 20px; border-left: 4px solid #4CAF50;">
+                        <p style="margin: 0; font-size: 0.9em;">
+                            🔒 <strong>Pago seguro simulado</strong> - Esto es una demostración académica. 
+                            No se procesarán cargos reales ni se almacenarán datos de tarjetas.
+                        </p>
+                    </div>
+                    
+                    <button type="submit" 
+                            style="width: 100%; padding: 15px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); 
+                                   color: white; border: none; border-radius: 5px; font-size: 16px; font-weight: bold; 
+                                   cursor: pointer; transition: transform 0.2s;">
+                        💳 Procesar Pago de ${data.invoice_details.total}
+                    </button>
+                </form>
+            </div>
+            
+            <div style="text-align: center; margin-top: 20px;">
+                <button onclick="window.print()" class="btn-print">🖨️ Imprimir Factura</button>
+                <button onclick="this.closest('.modal').remove()" class="btn-close">Cerrar</button>
+            </div>
+        </div>
+    `;
+    document.body.appendChild(modal);
+}
+
+// Función para formatear número de tarjeta con espacios
+function formatCardNumber(input) {
+    let value = input.value.replace(/\s/g, '').replace(/[^0-9]/g, '');
+    let formattedValue = value.match(/.{1,4}/g)?.join(' ') || value;
+    input.value = formattedValue;
+}
+
+// Función para formatear fecha de expiración
+function formatExpirationDate(input) {
+    let value = input.value.replace(/\D/g, '');
+    if (value.length >= 2) {
+        value = value.slice(0, 2) + '/' + value.slice(2, 4);
+    }
+    input.value = value;
+}
+
+// Función para procesar el pago con validación de tarjeta
+async function processPaymentWithCard(event, billingId, totalAmount) {
+    event.preventDefault();
+    
+    const token = localStorage.getItem('token');
+    
+    // Obtener datos del formulario
+    const cardholderName = document.getElementById('cardholderName').value;
+    const cardNumber = document.getElementById('cardNumber').value.replace(/\s/g, '');
+    const expirationDate = document.getElementById('expirationDate').value;
+    const cvv = document.getElementById('cvv').value;
+    
+    // Validaciones básicas
+    if (cardNumber.length < 13 || cardNumber.length > 16) {
+        alert('❌ Número de tarjeta inválido. Debe tener entre 13 y 16 dígitos.');
+        return;
+    }
+    
+    if (!expirationDate.match(/^(0[1-9]|1[0-2])\/\d{2}$/)) {
+        alert('❌ Fecha de expiración inválida. Use formato MM/AA');
+        return;
+    }
+    
+    if (cvv.length < 3 || cvv.length > 4) {
+        alert('❌ CVV inválido. Debe tener 3 o 4 dígitos.');
+        return;
+    }
+    
+    // Mostrar modal de procesamiento
+    const processingModal = document.createElement('div');
+    processingModal.className = 'modal';
+    processingModal.style.zIndex = '10001';
+    processingModal.innerHTML = `
+        <div class="modal-content" style="max-width: 400px; text-align: center;">
+            <div style="padding: 40px;">
+                <div style="font-size: 60px; margin-bottom: 20px;">⏳</div>
+                <h2 style="color: #667eea;">Procesando Pago...</h2>
+                <p style="margin: 20px 0;">Por favor espere mientras procesamos su pago de forma segura.</p>
+                <div style="width: 100%; height: 4px; background: #e0e0e0; border-radius: 2px; overflow: hidden; margin-top: 20px;">
+                    <div style="width: 30%; height: 100%; background: linear-gradient(90deg, #667eea, #764ba2); 
+                                animation: loading 1.5s infinite;"></div>
+                </div>
+            </div>
+        </div>
+        <style>
+            @keyframes loading {
+                0% { transform: translateX(-100%); }
+                100% { transform: translateX(400%); }
+            }
+        </style>
+    `;
+    document.body.appendChild(processingModal);
+    
+    // Simular tiempo de procesamiento (2 segundos)
+    await new Promise(resolve => setTimeout(resolve, 2000));
+    
+    try {
+        const response = await fetch(`/billing/${billingId}/pay`, {
+            method: 'POST',
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+        
+        const data = await response.json();
+        
+        // Remover modal de procesamiento
+        processingModal.remove();
+        
+        if (response.ok) {
+            // Mostrar confirmación exitosa
+            const successModal = document.createElement('div');
+            successModal.className = 'modal';
+            successModal.style.zIndex = '10001';
+            successModal.innerHTML = `
+                <div class="modal-content" style="max-width: 500px; text-align: center;">
+                    <div style="padding: 40px;">
+                        <div style="font-size: 80px; margin-bottom: 20px;">✅</div>
+                        <h2 style="color: #4CAF50;">¡Pago Exitoso!</h2>
+                        
+                        <div style="background: #f5f5f5; padding: 20px; border-radius: 10px; margin: 30px 0; text-align: left;">
+                            <p><strong>💳 Tarjeta:</strong> **** **** **** ${cardNumber.slice(-4)}</p>
+                            <p><strong>👤 Titular:</strong> ${cardholderName}</p>
+                            <p><strong>💰 Monto:</strong> ${totalAmount}</p>
+                            <p><strong>🆔 ID Transacción:</strong> ${data.transaction_id}</p>
+                            <p><strong>📅 Fecha:</strong> ${new Date().toLocaleString('es')}</p>
+                            <p><strong>🏦 Método:</strong> ${data.payment_method}</p>
+                        </div>
+                        
+                        <div style="background: #e8f5e9; padding: 15px; border-radius: 5px; margin: 20px 0; border-left: 4px solid #4CAF50;">
+                            <p style="margin: 0; font-size: 0.9em;">
+                                ${data.note}
+                            </p>
+                        </div>
+                        
+                        <button onclick="this.closest('.modal').remove(); document.querySelector('.modal').remove();" 
+                                style="padding: 12px 30px; background: #4CAF50; color: white; border: none; 
+                                       border-radius: 5px; font-size: 16px; font-weight: bold; cursor: pointer; margin-top: 20px;">
+                            Cerrar
+                        </button>
+                    </div>
+                </div>
+            `;
+            document.body.appendChild(successModal);
+            
+            // Actualizar la información de uso
+            loadUsageInfo();
+        } else {
+            alert('❌ Error procesando pago: ' + data.detail);
+        }
+    } catch (error) {
+        processingModal.remove();
+        alert('❌ Error de conexión al procesar el pago');
+    }
+}
+
+// Agregar estilos CSS al final del HTML
+const style = document.createElement('style');
+style.textContent = `
+    .modal {
+        display: block;
+        position: fixed;
+        z-index: 10000;
+        left: 0;
+        top: 0;
+        width: 100%;
+        height: 100%;
+        overflow: auto;
+        background-color: rgba(0,0,0,0.5);
+        animation: fadeIn 0.3s;
+    }
+    
+    @keyframes fadeIn {
+        from { opacity: 0; }
+        to { opacity: 1; }
+    }
+    
+    input:focus {
+        outline: none;
+        border-color: #667eea !important;
+        box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+    }
+    
+    button[type="submit"]:hover {
+        transform: scale(1.02);
+    }
+    
+    button[type="submit"]:active {
+        transform: scale(0.98);
+    }
+`;
+document.head.appendChild(style);
+
+async function processPayment(billingId) {
+    const token = localStorage.getItem('token');
+    
+    if (!confirm('¿Confirma el pago de esta factura? (Simulación académica)')) {
+        return;
+    }
+    
+    try {
+        const response = await fetch(`/billing/${billingId}/pay`, {
+            method: 'POST',
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+        
+        const data = await response.json();
+        
+        if (response.ok) {
+            alert(`✅ ${data.message}\n\n` +
+                  `Monto: $${data.amount_paid.toFixed(2)}\n` +
+                  `Método: ${data.payment_method}\n` +
+                  `ID Transacción: ${data.transaction_id}\n\n` +
+                  `${data.note}`);
+            
+            document.querySelector('.modal').remove();
+            loadUsageInfo();
+        } else {
+            alert('Error procesando pago: ' + data.detail);
+        }
+    } catch (error) {
+        alert('Error de conexión');
+    }
+}
+
+async function viewPatientReport(predictionId) {
+    const token = localStorage.getItem('token');
+    
+    try {
+        const response = await fetch(`/prediction/${predictionId}/patient-report`, {
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+        
+        const data = await response.json();
+        
+        if (response.ok) {
+            displayPatientReport(data);
+        } else {
+            alert('Error: ' + data.detail);
+        }
+    } catch (error) {
+        alert('Error de conexión');
+    }
+}
+
+function displayPatientReport(data) {
+    const modal = document.createElement('div');
+    modal.className = 'modal';
+    modal.innerHTML = `
+        <div class="modal-content patient-report" style="max-width: 800px; max-height: 85vh; overflow-y: auto;">
+            <span class="close" onclick="this.parentElement.parentElement.remove()">&times;</span>
+            
+            <div style="text-align: center; padding: 20px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; border-radius: 10px; margin-bottom: 20px;">
+                <h1>🫀 Reporte de Análisis Cardiovascular</h1>
+                <p style="font-size: 1.1em;">CardioPredict S.A.</p>
+            </div>
+            
+            <div style="background: #f5f5f5; padding: 20px; border-radius: 10px; margin: 20px 0;">
+                <h3>👤 Información del Paciente</h3>
+                <p><strong>Nombre:</strong> ${data.patient_info.name}</p>
+                <p><strong>Identificación:</strong> ${data.patient_info.id}</p>
+                <p><strong>Edad:</strong> ${data.patient_info.age} años</p>
+                ${data.patient_info.email ? `<p><strong>Email:</strong> ${data.patient_info.email}</p>` : ''}
+                ${data.patient_info.phone ? `<p><strong>Teléfono:</strong> ${data.patient_info.phone}</p>` : ''}
+                <p><strong>Fecha del Análisis:</strong> ${new Date(data.analysis_date).toLocaleString('es')}</p>
+            </div>
+            
+            <div style="background: ${data.risk_level === 'BAJO' ? '#d4edda' : data.risk_level === 'MODERADO' ? '#fff3cd' : '#f8d7da'}; padding: 30px; border-radius: 10px; margin: 20px 0;">
+                <h2 style="text-align: center;">NIVEL DE RIESGO: ${data.risk_level}</h2>
+                <p style="text-align: center; font-size: 1.5em; font-weight: bold;">
+                    ${data.risk_percentage.toFixed(1)}%
+                </p>
+            </div>
+            
+            <div style="margin: 30px 0;">
+                <h3>📋 ¿Qué Significan Sus Resultados?</h3>
+                <p><strong>${data.risk_explanation.summary}</strong></p>
+                <p>${data.risk_explanation.what_it_means}</p>
+                <p style="background: #e8f5e9; padding: 15px; border-radius: 8px; margin: 10px 0;">
+                    ✅ ${data.risk_explanation.good_news}
+                </p>
+                <p><strong>Próximos Pasos:</strong> ${data.risk_explanation.next_steps}</p>
+            </div>
+            
+            <div style="margin: 30px 0;">
+                <h3>🩺 Parámetros Clínicos Evaluados</h3>
+                <table style="width: 100%; border-collapse: collapse;">
+                    <tr style="background: #f5f5f5;">
+                        <td style="padding: 10px; border: 1px solid #ddd;"><strong>Presión Arterial</strong></td>
+                        <td style="padding: 10px; border: 1px solid #ddd;">${data.clinical_parameters.blood_pressure}</td>
+                    </tr>
+                    <tr>
+                        <td style="padding: 10px; border: 1px solid #ddd;"><strong>Colesterol</strong></td>
+                        <td style="padding: 10px; border: 1px solid #ddd;">${data.clinical_parameters.cholesterol}</td>
+                    </tr>
+                    <tr style="background: #f5f5f5;">
+                        <td style="padding: 10px; border: 1px solid #ddd;"><strong>Frecuencia Cardíaca Máxima</strong></td>
+                        <td style="padding: 10px; border: 1px solid #ddd;">${data.clinical_parameters.max_heart_rate}</td>
+                    </tr>
+                    <tr>
+                        <td style="padding: 10px; border: 1px solid #ddd;"><strong>Azúcar en Ayunas</strong></td>
+                        <td style="padding: 10px; border: 1px solid #ddd;">${data.clinical_parameters.fasting_blood_sugar}</td>
+                    </tr>
+                    <tr style="background: #f5f5f5;">
+                        <td style="padding: 10px; border: 1px solid #ddd;"><strong>Angina por Ejercicio</strong></td>
+                        <td style="padding: 10px; border: 1px solid #ddd;">${data.clinical_parameters.exercise_angina}</td>
+                    </tr>
+                </table>
+            </div>
+            
+            ${data.risk_factors.length > 0 ? `
+                <div style="background: #fff3cd; padding: 20px; border-radius: 10px; margin: 20px 0; border-left: 4px solid #ffc107;">
+                    <h3>⚠️ Factores de Riesgo Identificados</h3>
+                    <ul>
+                        ${data.risk_factors.map(f => `<li>${f}</li>`).join('')}
+                    </ul>
+                </div>
+            ` : `
+                <div style="background: #e8f5e9; padding: 20px; border-radius: 10px; margin: 20px 0; border-left: 4px solid #4CAF50;">
+                    <p>✅ No se identificaron factores de riesgo significativos en su evaluación.</p>
+                </div>
+            `}
+            
+            <div style="margin: 30px 0;">
+                <h3>💡 Recomendaciones para Usted</h3>
+                ${data.detailed_recommendations.map(rec => `
+                    <div style="background: #f9f9f9; padding: 20px; border-radius: 10px; margin: 15px 0;">
+                        <h4 style="color: #667eea; margin-bottom: 15px;">${rec.category}: ${rec.title}</h4>
+                        <ul style="margin-left: 20px;">
+                            ${rec.tips.map(tip => `<li style="margin: 8px 0;">${tip}</li>`).join('')}
+                        </ul>
+                    </div>
+                `).join('')}
+            </div>
+            
+            <div style="margin: 30px 0;">
+                <h3>🌟 Consejos de Estilo de Vida</h3>
+                <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 15px;">
+                    ${data.lifestyle_tips.map(tip => `
+                        <div style="background: #f5f5f5; padding: 15px; border-radius: 10px;">
+                            <div style="font-size: 2em; text-align: center; margin-bottom: 10px;">${tip.icon}</div>
+                            <h4 style="text-align: center; margin-bottom: 10px;">${tip.title}</h4>
+                            <p style="font-size: 0.9em; text-align: center;">${tip.description}</p>
+                        </div>
+                    `).join('')}
+                </div>
+            </div>
+            
+            <div style="background: #ffebee; padding: 20px; border-radius: 10px; margin: 20px 0; border-left: 4px solid #f44336;">
+                <h3>${data.when_to_see_doctor.emergency_signs.title}</h3>
+                <ul style="margin-left: 20px;">
+                    ${data.when_to_see_doctor.emergency_signs.signs.map(s => `<li style="margin: 8px 0; color: #d32f2f;"><strong>${s}</strong></li>`).join('')}
+                </ul>
+            </div>
+            
+            <div style="background: #e3f2fd; padding: 20px; border-radius: 10px; margin: 20px 0; border-left: 4px solid #2196F3;">
+                <h3>${data.when_to_see_doctor.routine_visit.title}</h3>
+                <ul style="margin-left: 20px;">
+                    ${data.when_to_see_doctor.routine_visit.signs.map(s => `<li style="margin: 8px 0;">${s}</li>`).join('')}
+                </ul>
+            </div>
+            
+            <div style="background: #fff3cd; padding: 20px; border-radius: 10px; margin: 20px 0; border: 2px solid #ffc107;">
+                <p style="font-size: 0.9em; text-align: center;"><strong>⚠️ Aviso Legal:</strong> ${data.disclaimer}</p>
+            </div>
+            
+            <div style="text-align: center; margin-top: 30px;">
+                <button onclick="window.print()" class="btn-print">🖨️ Imprimir para el Paciente</button>
+                <button onclick="this.closest('.modal').remove()" class="btn-close">Cerrar</button>
+            </div>
+        </div>
+    `;
+    document.body.appendChild(modal);
+}
+
+document.getElementById('predictionForm').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    
+    const token = localStorage.getItem('token');
+    
+    const data = {
+        patient_info: {
+            patient_name: document.getElementById('patientName').value,
+            patient_id: document.getElementById('patientId').value,
+            patient_email: document.getElementById('patientEmail').value || null,
+            patient_phone: document.getElementById('patientPhone').value || null
+        },
+        age: parseInt(document.getElementById('age').value),
+        sex: parseInt(document.getElementById('sex').value),
+        chest_pain_type: parseInt(document.getElementById('chestPainType').value),
+        resting_bp: parseInt(document.getElementById('restingBP').value),
+        cholesterol: parseInt(document.getElementById('cholesterol').value),
+        fasting_bs: parseInt(document.getElementById('fastingBS').value),
+        max_hr: parseInt(document.getElementById('maxHR').value),
+        exercise_angina: parseInt(document.getElementById('exerciseAngina').value),
+        st_depression: parseFloat(document.getElementById('stDepression').value),
+        num_major_vessels: parseInt(document.getElementById('numMajorVessels').value)
+    };
+    
+    try {
+        const response = await fetch('/predict', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`
+            },
+            body: JSON.stringify(data)
+        });
+        
+        const result = await response.json();
+        
+        if (response.ok) {
+            displayResult(result);
+            loadHistory();
+            loadUsageInfo();
+        } else {
+            alert('Error: ' + result.detail);
+        }
+    } catch (error) {
+        alert('Error de conexión');
+    }
+});
+
+function displayResult(result) {
+    const resultDiv = document.getElementById('result');
+    const resultContent = document.getElementById('resultContent');
+    
+    const riskClass = result.risk_level === 'BAJO' ? 'risk-low' : 
+                     result.risk_level === 'MODERADO' ? 'risk-moderate' : 'risk-high';
+    
+    const factorsHTML = result.factors.length > 0 ? 
+        `<div style="margin-top: 20px;">
+            <h3>⚕️ Factores de Riesgo Detectados:</h3>
+            <ul>
+                ${result.factors.map(f => `<li>${f}</li>`).join('')}
+            </ul>
+        </div>` : 
+        '<p>✅ No se detectaron factores de riesgo significativos</p>';
+    
+    resultContent.innerHTML = `
+        <div class="patient-header" style="background: #f5f5f5; padding: 15px; border-radius: 10px; margin-bottom: 20px;">
+            <h3>👤 Datos del Paciente</h3>
+            <p><strong>Nombre:</strong> ${result.patient_info.patient_name}</p>
+            <p><strong>ID:</strong> ${result.patient_info.patient_id}</p>
+            ${result.patient_info.patient_email ? `<p><strong>Email:</strong> ${result.patient_info.patient_email}</p>` : ''}
+            ${result.patient_info.patient_phone ? `<p><strong>Teléfono:</strong> ${result.patient_info.patient_phone}</p>` : ''}
+            <button onclick="viewPatientReport(${result.prediction_id})" class="btn-patient-report">
+                📄 Ver Reporte Completo para el Paciente
+            </button>
+        </div>
+        
+        <div class="${riskClass}" style="padding: 30px; border-radius: 15px;">
+            <h2>RIESGO ${result.risk_level}</h2>
+            <p style="font-size: 24px; font-weight: bold; margin: 20px 0;">
+                Probabilidad: ${result.risk_percentage.toFixed(1)}%
+            </p>
+            
+            <h3>💡 Recomendaciones Clínicas:</h3>
+            <ol>
+                ${result.recommendations.map(r => `<li>${r}</li>`).join('')}
+            </ol>
+            
+            ${factorsHTML}
+            
+            <div style="margin-top: 30px; padding: 15px; background: rgba(255,255,255,0.3); border-radius: 10px;">
+                <p><strong>💰 Costo de este análisis:</strong> $${result.cost.toFixed(2)}</p>
+                <p><strong>🆔 ID de Predicción:</strong> #${result.prediction_id}</p>
+                <p><strong>📅 Fecha:</strong> ${new Date(result.timestamp).toLocaleString('es')}</p>
+            </div>
+            
+            <div style="margin-top: 20px; padding: 15px; background: rgba(255,255,255,0.3); border-radius: 10px;">
+                <strong>⚠️ Importante:</strong> Esta es una herramienta de apoyo al diagnóstico. 
+                Los resultados deben ser interpretados por un profesional médico calificado.
+                <br><br>
+                <strong>📊 Precisión del Modelo:</strong> 81.97% (XGBoost)
+            </div>
+        </div>
+    `;
+    
+    resultDiv.style.display = 'block';
+    resultDiv.scrollIntoView({ behavior: 'smooth' });
+}
+    </script>
+</body>
+</html>
