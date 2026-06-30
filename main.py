@@ -16,8 +16,16 @@ from passlib.context import CryptContext
 import sqlite3
 import os
 
+# Base directory for resolving paths in serverless environment
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+DB_PATH = os.path.join("/tmp", "cardiopredict.db")
+
+def get_db():
+    """Get a database connection. Uses /tmp/ for Vercel compatibility."""
+    return sqlite3.connect(DB_PATH)
+
 # Configuración
-SECRET_KEY = "tu-clave-secreta-super-segura-cambiar-en-produccion"
+SECRET_KEY = os.environ.get("SECRET_KEY", "tu-clave-secreta-super-segura-cambiar-en-produccion")
 ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = 30
 
@@ -37,17 +45,17 @@ app.add_middleware(
 )
 
 # Templates
-templates = Jinja2Templates(directory="templates")
+templates = Jinja2Templates(directory=os.path.join(BASE_DIR, "templates"))
 
 # Montar archivos estáticos
-app.mount("/static", StaticFiles(directory="static"), name="static")
+app.mount("/static", StaticFiles(directory=os.path.join(BASE_DIR, "static")), name="static")
 
 # Seguridad
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
 
 # Cargar modelo
-MODEL_PATH = "model/cardio_model.joblib"
+MODEL_PATH = os.path.join(BASE_DIR, "model", "cardio_model.joblib")
 try:
     model = joblib.load(MODEL_PATH)
     print("✅ Modelo cargado correctamente")
@@ -124,7 +132,7 @@ class UsageStats(BaseModel):
 
 def init_db():
     """Inicializa la base de datos SQLite"""
-    conn = sqlite3.connect('cardiopredict.db')
+    conn = get_db()
     c = conn.cursor()
     
     # Tabla de usuarios (PROVEEDORES DE SERVICIOS)
@@ -204,7 +212,7 @@ def create_access_token(data: dict, expires_delta: Optional[timedelta] = None):
     return encoded_jwt
 
 def get_user_from_db(email: str):
-    conn = sqlite3.connect('cardiopredict.db')
+    conn = get_db()
     c = conn.cursor()
     c.execute("SELECT * FROM users WHERE email = ?", (email,))
     user = c.fetchone()
@@ -212,7 +220,7 @@ def get_user_from_db(email: str):
     return user
 
 def create_user_in_db(email: str, hashed_password: str, full_name: str, organization: str, plan: str):
-    conn = sqlite3.connect('cardiopredict.db')
+    conn = get_db()
     c = conn.cursor()
     try:
         c.execute(
@@ -284,7 +292,7 @@ def calculate_prediction_cost(user_plan: str, predictions_this_period: int):
 
 def get_user_usage_stats(user_id: int):
     """Obtiene estadísticas de uso del proveedor"""
-    conn = sqlite3.connect('cardiopredict.db')
+    conn = get_db()
     c = conn.cursor()
     
     # Obtener info del usuario
@@ -528,7 +536,7 @@ async def predict(
     
     try:
         # Contar predicciones actuales para calcular costo
-        conn = sqlite3.connect('cardiopredict.db')
+        conn = get_db()
         c = conn.cursor()
         c.execute("""
             SELECT COUNT(*) FROM predictions 
@@ -563,7 +571,7 @@ async def predict(
         factors = detect_risk_factors(data.dict())
         
         # Guardar predicción con datos del PACIENTE en la base de datos
-        conn = sqlite3.connect('cardiopredict.db')
+        conn = get_db()
         c = conn.cursor()
         c.execute("""
             INSERT INTO predictions 
@@ -607,7 +615,7 @@ async def predict(
 @app.get("/history")
 async def get_history(current_user: tuple = Depends(get_current_user)):
     """Obtener historial de predicciones del proveedor"""
-    conn = sqlite3.connect('cardiopredict.db')
+    conn = get_db()
     c = conn.cursor()
     c.execute("""
         SELECT id, patient_name, patient_id, probability, risk_level, cost, created_at
@@ -660,7 +668,7 @@ async def generate_billing_report(current_user: tuple = Depends(get_current_user
         )
     
     # Guardar en tabla de billing
-    conn = sqlite3.connect('cardiopredict.db')
+    conn = get_db()
     c = conn.cursor()
     c.execute("""
         INSERT INTO billing 
@@ -709,7 +717,7 @@ async def get_usage_report(current_user: tuple = Depends(get_current_user)):
         )
     
     # Obtener detalle de cada predicción del período
-    conn = sqlite3.connect('cardiopredict.db')
+    conn = get_db()
     c = conn.cursor()
     c.execute("""
         SELECT id, patient_name, patient_id, patient_age, risk_level, cost, created_at
@@ -749,7 +757,7 @@ async def get_patient_report(
     user_id = current_user[0]
     
     # Obtener predicción
-    conn = sqlite3.connect('cardiopredict.db')
+    conn = get_db()
     c = conn.cursor()
     c.execute("""
         SELECT patient_name, patient_id, patient_age, patient_email, patient_phone,
@@ -816,7 +824,7 @@ async def simulate_payment(
     user_id = current_user[0]
     
     # Obtener factura
-    conn = sqlite3.connect('cardiopredict.db')
+    conn = get_db()
     c = conn.cursor()
     c.execute("""
         SELECT total_cost, status 
