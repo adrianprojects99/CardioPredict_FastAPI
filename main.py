@@ -7,8 +7,8 @@ from fastapi.templating import Jinja2Templates
 from fastapi import Request
 from pydantic import BaseModel, EmailStr
 from typing import Optional
-import xgboost as xgb
-import numpy as np
+import json
+import math
 from datetime import datetime, timedelta
 import jwt
 from passlib.context import CryptContext
@@ -53,16 +53,47 @@ app.mount("/static", StaticFiles(directory=os.path.join(BASE_DIR, "static")), na
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
 
-# Cargar modelo (formato nativo xgboost)
+# Cargar modelo XGBoost desde JSON (inferencia pura sin dependencia xgboost)
 MODEL_PATH = os.path.join(BASE_DIR, "model", "cardio_model.json")
 FEATURE_NAMES = ['Age', 'Sex', 'ChestPainType', 'RestingBP', 'Cholesterol',
                  'FastingBS', 'MaxHR', 'ExerciseAngina', 'ST_Depression', 'NumMajorVessels']
+
+def _predict_tree(tree, features):
+    """Recorre un arbol de decision y retorna el valor de la hoja."""
+    node = 0
+    left = tree['left_children']
+    right = tree['right_children']
+    split_idx = tree['split_indices']
+    split_cond = tree['split_conditions']
+    while left[node] != -1:
+        if features[split_idx[node]] < split_cond[node]:
+            node = left[node]
+        else:
+            node = right[node]
+    return split_cond[node]
+
+def model_predict(features_list):
+    """Predice probabilidad de riesgo cardiovascular usando el modelo cargado.
+    features_list: lista con los 10 valores clinicos en orden de FEATURE_NAMES.
+    Retorna probabilidad entre 0 y 1."""
+    raw_sum = model_data['base_score_logit']
+    for tree in model_data['trees']:
+        raw_sum += _predict_tree(tree, features_list)
+    return 1.0 / (1.0 + math.exp(-raw_sum))
+
 try:
-    model = xgb.Booster()
-    model.load_model(MODEL_PATH)
-    print("✅ Modelo cargado correctamente")
+    with open(MODEL_PATH) as f:
+        _raw = json.load(f)
+    _base_score = float(_raw['learner']['learner_model_param']['base_score'])
+    model_data = {
+        'trees': _raw['learner']['gradient_booster']['model']['trees'],
+        'base_score_logit': math.log(_base_score / (1 - _base_score)),
+    }
+    del _raw
+    model = True
+    print("Modelo cargado correctamente")
 except Exception as e:
-    print(f"❌ Error cargando modelo: {e}")
+    print(f"Error cargando modelo: {e}")
     model = None
 
 # === MODELOS PYDANTIC ===
@@ -552,13 +583,12 @@ async def predict(
         prediction_cost = calculate_prediction_cost(user_plan, predictions_count)
         
         # Preparar datos para el modelo
-        features = np.array([[data.age, data.sex, data.chest_pain_type, data.resting_bp,
-                              data.cholesterol, data.fasting_bs, data.max_hr,
-                              data.exercise_angina, data.st_depression, data.num_major_vessels]])
-        dmatrix = xgb.DMatrix(features, feature_names=FEATURE_NAMES)
+        features = [data.age, data.sex, data.chest_pain_type, data.resting_bp,
+                    data.cholesterol, data.fasting_bs, data.max_hr,
+                    data.exercise_angina, data.st_depression, data.num_major_vessels]
 
         # Realizar predicción
-        probability = float(model.predict(dmatrix)[0])
+        probability = float(model_predict(features))
         
         # Interpretar resultado
         interpretation = interpret_risk(probability)
