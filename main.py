@@ -7,8 +7,7 @@ from fastapi.templating import Jinja2Templates
 from fastapi import Request
 from pydantic import BaseModel, EmailStr
 from typing import Optional
-import joblib
-import pandas as pd
+import xgboost as xgb
 import numpy as np
 from datetime import datetime, timedelta
 import jwt
@@ -54,10 +53,13 @@ app.mount("/static", StaticFiles(directory=os.path.join(BASE_DIR, "static")), na
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
 
-# Cargar modelo
-MODEL_PATH = os.path.join(BASE_DIR, "model", "cardio_model.joblib")
+# Cargar modelo (formato nativo xgboost)
+MODEL_PATH = os.path.join(BASE_DIR, "model", "cardio_model.json")
+FEATURE_NAMES = ['Age', 'Sex', 'ChestPainType', 'RestingBP', 'Cholesterol',
+                 'FastingBS', 'MaxHR', 'ExerciseAngina', 'ST_Depression', 'NumMajorVessels']
 try:
-    model = joblib.load(MODEL_PATH)
+    model = xgb.Booster()
+    model.load_model(MODEL_PATH)
     print("✅ Modelo cargado correctamente")
 except Exception as e:
     print(f"❌ Error cargando modelo: {e}")
@@ -550,21 +552,13 @@ async def predict(
         prediction_cost = calculate_prediction_cost(user_plan, predictions_count)
         
         # Preparar datos para el modelo
-        df = pd.DataFrame([{
-            'Age': data.age,
-            'Sex': data.sex,
-            'ChestPainType': data.chest_pain_type,
-            'RestingBP': data.resting_bp,
-            'Cholesterol': data.cholesterol,
-            'FastingBS': data.fasting_bs,
-            'MaxHR': data.max_hr,
-            'ExerciseAngina': data.exercise_angina,
-            'ST_Depression': data.st_depression,
-            'NumMajorVessels': data.num_major_vessels
-        }])
-        
+        features = np.array([[data.age, data.sex, data.chest_pain_type, data.resting_bp,
+                              data.cholesterol, data.fasting_bs, data.max_hr,
+                              data.exercise_angina, data.st_depression, data.num_major_vessels]])
+        dmatrix = xgb.DMatrix(features, feature_names=FEATURE_NAMES)
+
         # Realizar predicción
-        probability = float(model.predict_proba(df)[0][1])
+        probability = float(model.predict(dmatrix)[0])
         
         # Interpretar resultado
         interpretation = interpret_risk(probability)
